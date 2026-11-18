@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, Camera, Search, SearchX } from "lucide-react";
+import { cacheLife, cacheTag } from "next/cache";
+import { ArrowRight, Camera, PackageOpen, Search, SearchX } from "lucide-react";
 import { ItemCard } from "@/components/item-card";
 import { categories } from "@/lib/categories";
-import { sampleItems } from "@/lib/sample-items";
+import { getRecentFoundItems, ITEMS_TAG } from "@/lib/items-server";
 
 export default function HomePage() {
-  const recentFound = sampleItems.filter((i) => i.status === "found").slice(0, 4);
-
   return (
     <div className="flex flex-col gap-7">
       {/* Greeting + search */}
@@ -95,17 +94,45 @@ export default function HomePage() {
             See all <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
         </div>
-        <ul className="flex flex-col gap-3">
-          {recentFound.map((item) => (
-            <li key={item.id}>
-              <ItemCard item={item} />
-            </li>
-          ))}
-        </ul>
-        <p className="text-center text-xs text-muted-foreground">
-          These are sample items. Real reports will appear once the database is connected.
-        </p>
+        <RecentFound />
       </section>
     </div>
+  );
+}
+
+/** Cached for a few minutes; refreshed instantly whenever an item is reported or deleted. */
+async function RecentFound() {
+  "use cache";
+  cacheTag(ITEMS_TAG);
+  cacheLife("minutes");
+
+  const items = await getRecentFoundItems(4);
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed p-8 text-center">
+        <PackageOpen className="size-10 text-muted-foreground" aria-hidden="true" />
+        <p className="font-semibold">No found items yet</p>
+        <p className="max-w-xs text-sm text-muted-foreground">
+          Found something? Be the first to report it and help someone get it back.
+        </p>
+        <Link
+          href="/report/found"
+          className="mt-1 inline-flex min-h-11 items-center gap-1 rounded-lg px-3 text-sm font-semibold text-primary outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          Report a found item <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="flex flex-col gap-3">
+      {items.map((item) => (
+        <li key={item.id}>
+          <ItemCard item={item} />
+        </li>
+      ))}
+    </ul>
   );
 }

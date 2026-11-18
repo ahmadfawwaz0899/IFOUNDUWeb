@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Camera, Search, SearchX } from "lucide-react";
+import { Camera, Loader2, Search, SearchX } from "lucide-react";
 import { ItemCard } from "@/components/item-card";
 import { categories, type CategoryId } from "@/lib/categories";
-import { sampleItems } from "@/lib/sample-items";
+import { ITEM_COLUMNS, type Item } from "@/lib/items";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 export function SearchView() {
@@ -15,15 +16,43 @@ export function SearchView() {
   const [category, setCategory] = useState<CategoryId | null>(
     (params.get("category") as CategoryId | null) ?? null
   );
+  const [results, setResults] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
-  // Simple keyword filter over the sample data. This becomes a database + AI search later.
-  const results = useMemo(() => {
-    const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-    return sampleItems.filter((item) => {
-      if (category && item.category !== category) return false;
-      const text = `${item.title} ${item.description} ${item.location}`.toLowerCase();
-      return words.every((w) => text.includes(w));
-    });
+  // Ask the database, waiting until the user pauses typing for 300 ms.
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      let q = createClient()
+        .from("items")
+        .select(ITEM_COLUMNS)
+        .eq("is_resolved", false)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (category) q = q.eq("category", category);
+
+      // Every word must appear in the name, description or place.
+      const words = query
+        .replace(/[^\p{L}\p{N}\s-]/gu, " ") // drop symbols that would confuse the filter
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 6);
+      for (const w of words) {
+        q = q.or(`title.ilike.%${w}%,description.ilike.%${w}%,location_name.ilike.%${w}%`);
+      }
+
+      const { data, error } = await q;
+      if (cancelled) return;
+      setFailed(Boolean(error));
+      setResults((data as Item[] | null) ?? []);
+      setLoading(false);
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [query, category]);
 
   return (
@@ -78,11 +107,19 @@ export function SearchView() {
         </span>
       </Link>
 
-      <p className="text-sm text-muted-foreground" aria-live="polite">
-        {results.length} {results.length === 1 ? "item" : "items"}
+      <p className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+        {loading ? (
+          <>
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" /> Searching…
+          </>
+        ) : failed ? (
+          "Couldn't load items. Check your connection and try again."
+        ) : (
+          `${results.length} ${results.length === 1 ? "item" : "items"}`
+        )}
       </p>
 
-      {results.length > 0 ? (
+      {loading && results.length === 0 ? null : results.length > 0 ? (
         <ul className="flex flex-col gap-3">
           {results.map((item) => (
             <li key={item.id}>

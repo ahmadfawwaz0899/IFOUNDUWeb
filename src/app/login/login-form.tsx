@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { signIn, type FormState } from "@/app/auth/actions";
 import { Field, FormMessage } from "@/components/form-ui";
@@ -8,9 +9,11 @@ import { Button } from "@/components/ui/button";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState<FormState, FormData>(signIn, {});
+  const next = useSearchParams().get("next") ?? "";
 
   return (
     <form action={action} className="flex flex-col gap-4">
+      <input type="hidden" name="next" value={next} />
       <Field
         id="email"
         name="email"

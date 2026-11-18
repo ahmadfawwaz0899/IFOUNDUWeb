@@ -42,7 +42,9 @@ export async function signIn(_prev: FormState, formData: FormData): Promise<Form
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: friendly(error.message), fields: { email } };
 
-  redirect("/profile");
+  // Go back to the page that asked for sign-in (only pages on this site).
+  const next = text(formData, "next");
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/profile");
 }
 
 export async function signUp(_prev: FormState, formData: FormData): Promise<FormState> {

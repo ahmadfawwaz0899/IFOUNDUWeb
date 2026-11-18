@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { compressImage, PENDING_PHOTO_KEY } from "@/lib/image";
 import {
   Camera,
   CameraOff,
@@ -18,6 +20,7 @@ type Step = "starting" | "camera" | "no-camera" | "captured" | "chosen";
 type Intent = "found" | "lost";
 
 export function ScanView() {
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,7 +81,7 @@ export function ScanView() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext("2d")?.drawImage(video, 0, 0);
-    setPhoto(canvas.toDataURL("image/jpeg", 0.85));
+    setPhoto(canvas.toDataURL("image/jpeg", 0.85)); // canvas copy has no GPS data
     stopCamera();
     setStep("captured");
   }
@@ -102,7 +105,24 @@ export function ScanView() {
     startCamera();
   }
 
-  function choose(value: Intent) {
+  async function choose(value: Intent) {
+    if (value === "found" && photo) {
+      // Hand a shrunk copy of the photo to the report form (kept only in this browser tab).
+      try {
+        const small = await compressImage(photo);
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(small);
+        });
+        sessionStorage.setItem(PENDING_PHOTO_KEY, dataUrl);
+      } catch {
+        // Photo too large or storage blocked: the form will ask for a photo again.
+      }
+      router.push("/report/found");
+      return;
+    }
     setIntent(value);
     setStep("chosen");
   }

@@ -32,11 +32,11 @@ const menuLinks: MenuLink[] = [
   { href: "/", label: "Home", icon: Home },
   { href: "/search", label: "Search items", icon: Search },
   { href: "/scan", label: "Scan an item", icon: ScanLine },
+  { href: "/report/found", label: "Report a found item", icon: FilePlus2 },
   { href: "/profile", label: "My profile", icon: UserRound },
 ];
 
 const comingSoon: { label: string; icon: LucideIcon }[] = [
-  { label: "Report a found item", icon: FilePlus2 },
   { label: "Report a lost item", icon: SearchX },
   { label: "How IFoundU works", icon: CircleHelp },
 ];

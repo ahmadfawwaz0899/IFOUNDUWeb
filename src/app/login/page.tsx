@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -13,7 +14,10 @@ export default function LoginPage() {
           Sign in to report items, claim what&apos;s yours and get match alerts.
         </p>
       </div>
-      <LoginForm />
+      {/* The form reads ?next= from the URL, which is only known at request time */}
+      <Suspense fallback={<div className="h-[248px]" aria-hidden="true" />}>
+        <LoginForm />
+      </Suspense>
       <p className="text-center text-sm text-muted-foreground">
         New to IFoundU?{" "}
         <Link href="/signup" className="font-semibold text-primary underline-offset-4 hover:underline">
