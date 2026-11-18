@@ -3,7 +3,7 @@
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { Camera, ImagePlus, Loader2, Plus, ShieldAlert, X } from "lucide-react";
 import { createFoundItem, type ReportState } from "@/app/items/actions";
-import { Field, FormMessage } from "@/components/form-ui";
+import { Field, FormMessage, PhoneField } from "@/components/form-ui";
 import { Button } from "@/components/ui/button";
 import { categories } from "@/lib/categories";
 import { compressImage, PENDING_PHOTO_KEY } from "@/lib/image";
@@ -20,7 +20,7 @@ function localNow() {
   return d.toISOString().slice(0, 16);
 }
 
-export function ReportForm({ userId }: { userId: string }) {
+export function ReportForm({ userId, savedPhone }: { userId: string; savedPhone: string }) {
   const [state, formAction, saving] = useActionState<ReportState, FormData>(createFoundItem, {});
   const [photo, setPhoto] = useState<string | null>(null); // preview (data URL)
   const [uploading, setUploading] = useState(false);
@@ -256,7 +256,13 @@ export function ReportForm({ userId }: { userId: string }) {
         )}
       </fieldset>
 
-      {/* 5. Sensitive */}
+      {/* 5. How the owner can reach you (after you approve) */}
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 text-sm font-semibold">How the owner can reach you</legend>
+        <PhoneField defaultValue={savedPhone} who="owner" />
+      </fieldset>
+
+      {/* 6. Sensitive */}
       <label className="flex cursor-pointer items-start gap-3 rounded-2xl border bg-card p-4">
         <input type="checkbox" name="isSensitive" className="mt-1 size-5 accent-primary" />
         <span className="flex-1">

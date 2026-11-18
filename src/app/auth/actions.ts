@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
 
 export type FormState = {
@@ -90,8 +91,7 @@ export async function updateProfile(_prev: FormState, formData: FormData): Promi
   const preferred = text(formData, "preferred");
 
   if (fullName.length < 2) return { error: "Please enter your name." };
-  if (phone && !/^[+\d][\d\s-]{6,19}$/.test(phone))
-    return { error: "Phone number looks wrong. Use digits, spaces, + or -." };
+  if (phone && !isValidPhone(phone)) return { error: PHONE_ERROR };
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();

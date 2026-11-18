@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { categories, type CategoryId } from "@/lib/categories";
 import { PHOTO_BUCKET } from "@/lib/items";
 import { ITEMS_TAG } from "@/lib/items-server";
+import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
 
 export type ReportState = { error?: string };
@@ -31,6 +32,7 @@ export async function createFoundItem(
   const happenedAt = text(formData, "happenedAt");
   const photoPath = text(formData, "photoPath");
   const isSensitive = formData.get("isSensitive") === "on";
+  const phone = text(formData, "phone");
   const questions = formData
     .getAll("question")
     .map((q) => String(q).trim())
@@ -59,6 +61,13 @@ export async function createFoundItem(
   if (questions.length > 3) return fail("Use at most 3 questions.");
   if (questions.some((q) => q.length < 3 || q.length > 300))
     return fail("Each question should be 3–300 characters.");
+  if (!isValidPhone(phone)) return fail(PHONE_ERROR);
+
+  // Save the phone to the profile (private: only shared after the finder approves a claim).
+  await supabase
+    .from("profile_contacts")
+    .update({ phone, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
 
   const { data: item, error } = await supabase
     .from("items")

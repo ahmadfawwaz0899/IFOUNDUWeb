@@ -17,17 +17,20 @@ import { signOut } from "@/app/auth/actions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, getMyItemCounts } from "@/lib/auth";
+import { countPendingIncoming } from "@/lib/claims-server";
 import { EditProfile } from "./edit-profile";
 
 export const metadata: Metadata = { title: "Profile" };
 
-const sections: { title: string; rows: { label: string; hint: string; icon: LucideIcon }[] }[] = [
+type Row = { label: string; hint: string; icon: LucideIcon; href?: string; badge?: boolean };
+
+const sections: { title: string; rows: Row[] }[] = [
   {
     title: "My activity",
     rows: [
-      { label: "Items I found", hint: "Reports you posted", icon: HandHeart },
+      { label: "Items I reported", hint: "Your found reports and their claims", icon: HandHeart, href: "/my-items" },
+      { label: "Claims", hint: "Review claims and track your own", icon: MessagesSquare, href: "/claims", badge: true },
       { label: "Items I lost", hint: "What you're searching for", icon: Search },
-      { label: "Claims & messages", hint: "Chats with finders and owners", icon: MessagesSquare },
     ],
   },
   {
@@ -52,19 +55,40 @@ export default function ProfilePage() {
         <section key={section.title} className="flex flex-col gap-2">
           <h2 className="px-1 text-sm font-semibold text-muted-foreground">{section.title}</h2>
           <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
-            {section.rows.map(({ label, hint, icon: Icon }) => (
-              <li key={label} className="flex min-h-14 items-center gap-3 px-4 py-2.5">
-                <span className="flex size-9 items-center justify-center rounded-xl bg-secondary text-secondary-foreground">
-                  <Icon className="size-[18px]" aria-hidden="true" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block font-medium">{label}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{hint}</span>
-                </span>
-                <span className="text-xs text-muted-foreground">Soon</span>
-                <ChevronRight className="size-4 text-muted-foreground/60" aria-hidden="true" />
-              </li>
-            ))}
+            {section.rows.map(({ label, hint, icon: Icon, href, badge }) => {
+              const inner = (
+                <>
+                  <span className="flex size-9 items-center justify-center rounded-xl bg-secondary text-secondary-foreground">
+                    <Icon className="size-[18px]" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium">{label}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{hint}</span>
+                  </span>
+                  {badge && (
+                    <Suspense fallback={null}>
+                      <PendingClaimsBadge />
+                    </Suspense>
+                  )}
+                  {!href && <span className="text-xs text-muted-foreground">Soon</span>}
+                  <ChevronRight className="size-4 text-muted-foreground/60" aria-hidden="true" />
+                </>
+              );
+              return (
+                <li key={label}>
+                  {href ? (
+                    <Link
+                      href={href}
+                      className="flex min-h-14 items-center gap-3 px-4 py-2.5 outline-none hover:bg-muted/50 focus-visible:bg-muted"
+                    >
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className="flex min-h-14 items-center gap-3 px-4 py-2.5">{inner}</div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       ))}
@@ -166,6 +190,22 @@ function Stats({ found, lost, returned }: { found: number; lost: number; returne
         </div>
       ))}
     </section>
+  );
+}
+
+/** Red count of claims waiting for the user to review. */
+async function PendingClaimsBadge() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const count = await countPendingIncoming(user.id);
+  if (count === 0) return null;
+  return (
+    <span
+      className="flex h-6 min-w-6 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-bold text-white"
+      aria-label={`${count} waiting for review`}
+    >
+      {count}
+    </span>
   );
 }
 

@@ -62,5 +62,5 @@ async function ReportGate() {
     );
   }
 
-  return <ReportForm userId={user.id} />;
+  return <ReportForm userId={user.id} savedPhone={user.phone ?? ""} />;
 }

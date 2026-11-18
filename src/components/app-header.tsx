@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   CircleHelp,
   FilePlus2,
+  Hand,
   Home,
   Menu,
   ScanLine,
@@ -33,6 +34,7 @@ const menuLinks: MenuLink[] = [
   { href: "/search", label: "Search items", icon: Search },
   { href: "/scan", label: "Scan an item", icon: ScanLine },
   { href: "/report/found", label: "Report a found item", icon: FilePlus2 },
+  { href: "/claims", label: "Claims", icon: Hand },
   { href: "/profile", label: "My profile", icon: UserRound },
 ];
 

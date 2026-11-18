@@ -1,4 +1,4 @@
-import { CircleAlert, CircleCheck } from "lucide-react";
+import { CircleAlert, CircleCheck, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Field({
@@ -27,6 +27,39 @@ export function Field({
           {hint}
         </p>
       )}
+    </div>
+  );
+}
+
+/** Required phone number, saved to the user's private contact details. */
+export function PhoneField({
+  defaultValue,
+  who,
+}: {
+  defaultValue?: string;
+  who: "finder" | "owner";
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Field
+        id="phone"
+        name="phone"
+        type="tel"
+        label="Your phone number"
+        autoComplete="tel"
+        inputMode="tel"
+        placeholder="e.g. 012-345 6789"
+        required
+        minLength={7}
+        maxLength={20}
+        defaultValue={defaultValue}
+      />
+      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+        <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+        Kept private. The {who} only sees it after
+        {who === "finder" ? " they approve your claim" : " you approve their claim"}, so you can
+        call or WhatsApp each other.
+      </p>
     </div>
   );
 }

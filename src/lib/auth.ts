@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -12,8 +13,9 @@ export type CurrentUser = {
 /**
  * Returns the signed-in user, or null for guests.
  * Reads the login cookie, so call it inside a <Suspense> boundary.
+ * Wrapped in cache() so several components on one page share a single lookup.
  */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!isSupabaseConfigured) return null;
 
   const supabase = await createClient();
@@ -37,7 +39,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     phone: contact?.phone ?? null,
     preferred: contact?.preferred ?? null,
   };
-}
+});
 
 /** How many items this user has reported, by status. */
 export async function getMyItemCounts(userId: string) {
